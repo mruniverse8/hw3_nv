@@ -1,0 +1,4 @@
+defaults:
+  - batch_transforms: melspec
+  - instance_transforms: null
+  - _self_

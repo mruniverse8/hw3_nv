@@ -14,4 +14,14 @@ def collate_fn(dataset_items: list[dict]):
             of the tensors.
     """
 
-    pass  # TODO
+    result_batch = {}
+
+    # example of collate_fn
+    result_batch["spectrogram"] = torch.vstack(
+        [elem["spectrogram"] for elem in dataset_items]
+    )
+    result_batch["audio"] = torch.vstack(
+        [elem["audio"] for elem in dataset_items]
+    )
+
+    return result_batch
