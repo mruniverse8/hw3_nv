@@ -87,6 +87,8 @@ class HIFIGAN(nn.Module):
         self.post_conv = weight_norm(nn.Conv1d(h_u_prev, 1, kernel_size=7, stride=1, padding=3))
         self.tanh = nn.Tanh()
 
+        self.apply(self._init_weights)
+
 
 
     def forward(self, x: torch.Tensor):
@@ -109,6 +111,12 @@ class HIFIGAN(nn.Module):
         x_trim = x.squeeze(1)
         #assert x_trim.shape == (x.shape[0], self._sample_r), f"Error shape trim x {x.shape}"
         return {"pred_wav": x_trim}
+
+    def _init_weights(self, m):
+        if isinstance(m, (nn.Conv1d, nn.ConvTranspose1d)):
+            nn.init.normal_(m.weight, 0.0, 0.01)
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
 
     def __str__(self):
         """
