@@ -54,6 +54,7 @@ class ResBlock(nn.Module):
                 y = mrf(x)
             else:
                 y = y + mrf(x)
+        y = y / len(self.mrf_blocks) 
         return y
 
 
