@@ -1,0 +1,11 @@
+_target_: src.model.HIFIGAN
+sample_rate: 22050
+n_mels: 80 #taken from melspec.
+n_T: 100
+h_u: 128
+k_u: [16, 16, 4, 4]
+k_r: [3, 7, 11]
+D_r: [[[1, 1], [3, 1], [5, 1]],
+      [[1, 1], [3, 1], [5, 1]],
+      [[1, 3], [3, 1], [5, 3]]]
+

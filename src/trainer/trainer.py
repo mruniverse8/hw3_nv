@@ -3,6 +3,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.logger.utils import plot_spectrogram
+from src.logger.utils import plot_waveform
 from src.metrics.tracker import MetricTracker
 from src.metrics.utils import calc_cer, calc_wer
 from src.trainer.base_trainer import BaseTrainer
@@ -12,6 +13,9 @@ class Trainer(BaseTrainer):
     """
     Trainer class. Defines the logic of batch logging and processing.
     """
+    def __init__(self, discriminators, *args, **kwargs):
+        self.discriminators = discriminators
+        super().__init__(*args, **kwargs)
 
     def process_batch(self, batch, metrics: MetricTracker):
         """
@@ -33,32 +37,50 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(batch)  # transform batch on device -- faster
+        batch = self.transform_batch(batch)  # does nothing now
 
         metric_funcs = self.metrics["inference"]
         if self.is_train:
             metric_funcs = self.metrics["train"]
-            self.optimizer.zero_grad()
+            self.optimizer_gen.zero_grad()
+            self.optimizer_disc.zero_grad()
+        
+        raw_audio = batch["audio"]
+        spectrogram = batch["spectrogram"]
 
-        outputs = self.model(**batch)
-        batch.update(outputs)
+        loss_disc = self.criterion["discriminator"]
+        loss_gen = self.criterion["generator"]
 
-        all_losses = self.criterion(**batch)
-        batch.update(all_losses)
+        # Generator loss
+        G_s = self.model(spectrogram)
+
+        batch.update(G_s)
+        lst = []
+        batch.update(loss_gen(generator=self.model, discriminators=self.discriminators,**batch))
+        if self.is_train:
+            batch["gan_loss"].backward()  # sum of all losses is always called loss
+            self._clip_grad_norm()
+            self.optimizer_gen.step()
+            if self.lr_scheduler_gen is not None:
+                self.lr_scheduler_gen.step()
+            self.optimizer_gen.zero_grad()
+            self.optimizer_disc.zero_grad() 
+
+        batch.update(loss_disc(generator=self.model, discriminators=self.discriminators,**batch))
 
         if self.is_train:
-            batch["loss"].backward()  # sum of all losses is always called loss
+            batch["dis_loss"].backward()  # sum of all losses is always called loss
             self._clip_grad_norm()
-            self.optimizer.step()
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
+            self.optimizer_disc.step()
+            if self.lr_scheduler_disc is not None:
+                self.lr_scheduler_disc.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
             metrics.update(loss_name, batch[loss_name].item())
-
-        for met in metric_funcs:
-            metrics.update(met.name, met(**batch))
+        # look at metrics
+        #for met in metric_funcs:
+        #    metrics.update(met.name, met(**batch))
         return batch
 
     def _log_batch(self, batch_idx, batch, mode="train"):
@@ -82,42 +104,29 @@ class Trainer(BaseTrainer):
         else:
             # Log Stuff
             self.log_spectrogram(**batch)
-            self.log_predictions(**batch)
+            self.log_waveforms_and_audio(**batch)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
         image = plot_spectrogram(spectrogram_for_plot)
         self.writer.add_image("spectrogram", image)
+    
+    def log_waveforms_and_audio(self, pred_wav, audio, **batch):
+        sample_rate = getattr(self.config, 'sample_rate', 22050)  # Adjust based on your config
 
-    def log_predictions(
-        self, text, log_probs, log_probs_length, audio_path, examples_to_log=10, **batch
-    ):
-        # TODO add beam search
-        # Note: by improving text encoder and metrics design
-        # this logging can also be improved significantly
+        pred_image = plot_waveform(pred_wav[0].detach().cpu(), "Predicted Waveform")
+        self.writer.add_image("predicted_waveform", pred_image)
 
-        argmax_inds = log_probs.cpu().argmax(-1).numpy()
-        argmax_inds = [
-            inds[: int(ind_len)]
-            for inds, ind_len in zip(argmax_inds, log_probs_length.numpy())
-        ]
-        argmax_texts_raw = [self.text_encoder.decode(inds) for inds in argmax_inds]
-        argmax_texts = [self.text_encoder.ctc_decode(inds) for inds in argmax_inds]
-        tuples = list(zip(argmax_texts, text, argmax_texts_raw, audio_path))
+        self.writer.add_audio("predicted_audio", pred_wav[0], sample_rate=sample_rate)
 
-        rows = {}
-        for pred, target, raw_pred, audio_path in tuples[:examples_to_log]:
-            target = self.text_encoder.normalize_text(target)
-            wer = calc_wer(target, pred) * 100
-            cer = calc_cer(target, pred) * 100
+        diff = pred_wav[0] - audio[0]
+        diff_image = plot_waveform(diff.detach().cpu(), "Difference (Pred - Original)")
+        self.writer.add_image("waveform_difference", diff_image)
 
-            rows[Path(audio_path).name] = {
-                "target": target,
-                "raw prediction": raw_pred,
-                "predictions": pred,
-                "wer": wer,
-                "cer": cer,
-            }
-        self.writer.add_table(
-            "predictions", pd.DataFrame.from_dict(rows, orient="index")
-        )
+        self.writer.add_audio("difference_audio", diff, sample_rate=sample_rate)
+
+        if not self.is_train:
+            orig_image = plot_waveform(audio[0].detach().cpu(), "Original Audio")
+            self.writer.add_image("original_waveform", orig_image)
+            self.writer.add_audio("original_audio", audio[0], sample_rate=sample_rate)
+

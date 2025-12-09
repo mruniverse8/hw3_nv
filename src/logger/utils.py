@@ -65,3 +65,18 @@ def plot_spectrogram(spectrogram, name=None):
     plt.close()
 
     return image
+
+def plot_waveform(waveform, name=None):
+    plt.figure(figsize=(20, 5))
+    if waveform.dim() > 1:
+        waveform = waveform.squeeze()
+    plt.plot(waveform.detach().cpu().numpy())
+    plt.title(name)
+    plt.xlabel("Time")
+    plt.ylabel("Amplitude")
+    buf = io.BytesIO()
+    plt.savefig(buf, format="png")
+    buf.seek(0)
+    image = ToTensor()(PIL.Image.open(buf))
+    plt.close()
+    return image

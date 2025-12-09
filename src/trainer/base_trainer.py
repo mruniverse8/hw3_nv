@@ -20,8 +20,10 @@ class BaseTrainer:
         model,
         criterion,
         metrics,
-        optimizer,
-        lr_scheduler,
+        optimizer_discriminator,
+        optimizer_generator,
+        lr_scheduler_gen,
+        lr_scheduler_disc,
         text_encoder,
         config,
         device,
@@ -70,8 +72,10 @@ class BaseTrainer:
 
         self.model = model
         self.criterion = criterion
-        self.optimizer = optimizer
-        self.lr_scheduler = lr_scheduler
+        self.optimizer_gen = optimizer_generator
+        self.optimizer_disc = optimizer_discriminator
+        self.lr_scheduler_gen = lr_scheduler_gen
+        self.lr_scheduler_disc = lr_scheduler_disc
         self.text_encoder = text_encoder
         self.batch_transforms = batch_transforms
 
@@ -351,7 +355,7 @@ class BaseTrainer:
             batch[tensor_for_device] = batch[tensor_for_device].to(self.device)
         return batch
 
-    def transform_batch(self, batch):
+    def transform_batch(self, batch): # Nothing here
         """
         Transforms elements in batch. Like instance transform inside the
         BaseDataset class, but for the whole batch. Improves pipeline speed,

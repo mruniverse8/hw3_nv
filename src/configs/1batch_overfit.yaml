@@ -1,34 +1,43 @@
 defaults:
-  - model: baseline
-  - writer: wandb
-  - metrics: example
-  - datasets: example
-  - dataloader: example
-  - transforms: example_only_instance
+  - model: hifigan
+  - discriminators: multidiscriminator
+  - writer: cometml
+  - metrics: example #none
+  - datasets: ljspeech #here is the limit dataset
+  - dataloader: example #batch size here
+  - transforms: baseline
   - _self_
+
 optimizer:
-  _target_: torch.optim.AdamW
-  lr: 3e-4
+  cls: torch.optim.AdamW
+  betas: [0.8, 0.99]
+  weight_decay: 0.01
+  lr: 2e-4
+
 lr_scheduler:
-  _target_: torch.optim.lr_scheduler.OneCycleLR
-  max_lr: 1e-2
-  pct_start: 0.1
-  steps_per_epoch: ${trainer.epoch_len}
-  epochs: ${trainer.n_epochs}
-  anneal_strategy: cos
+  _target_: torch.optim.lr_scheduler.ExponentialLR
+  gamma: 0.999
+
 loss_function:
-  _target_: src.loss.CTCLossWrapper
-text_encoder:
-  _target_: src.text_encoder.CTCTextEncoder
+  discriminator:
+    _target_: src.loss.DisLoss
+  generator:
+    _target_: src.loss.GANLoss
+    lambda_ft: 2
+    lambda_mel: 45
+
+
+
 trainer:
-  log_step: 50
+  log_step: 5
   n_epochs: 50
-  epoch_len: 200
-  device_tensors: ["spectrogram", "text_encoded"] # which tensors should be on device (ex. GPU)
+  epoch_len: 2000
+  device_tensors: ["spectrogram", "audio"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   override: False # if True, will override the previous run with the same name
-  monitor: "min val_WER_(Argmax)" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  #monitor: "min val_WER_(Argmax)" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
+  monitor: "off"
   save_period: 5 # checkpoint each save_period epochs in addition to the best epoch
   early_stop: ${trainer.n_epochs} # epochs for early stopping
   save_dir: "saved"

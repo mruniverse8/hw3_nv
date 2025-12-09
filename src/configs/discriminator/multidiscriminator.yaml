@@ -1,0 +1,22 @@
+
+- _target_: src.model.discriminator_mpd.DiscriminatorMPD
+  p_fact: 2
+- _target_: src.model.discriminator_mpd.DiscriminatorMPD
+  p_fact: 3
+- _target_: src.model.discriminator_mpd.DiscriminatorMPD
+  p_fact: 5
+- _target_: src.model.discriminator_mpd.DiscriminatorMPD
+  p_fact: 7
+- _target_: src.model.discriminator_mpd.DiscriminatorMPD
+  p_fact: 11
+- _target_: src.model.discriminator_msd.DiscriminatorMSD
+  class_normalization:
+    _target_: torch.nn.utils.spectral_norm  
+  pool_factor: 2
+- _target_: src.model.discriminator_msd.DiscriminatorMSD
+  class_normalization:
+    _target_: torch.nn.utils.spectral_norm  
+  pool_factor: 4
+- _target_: src.model.discriminator_msd.DiscriminatorMSD
+  class_normalization:
+    _target_: torch.nn.utils.weight_norm
