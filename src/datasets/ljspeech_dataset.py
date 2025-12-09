@@ -51,7 +51,7 @@ class LJSpeechDataset(BaseDataset):
     def _create_index(self, part):
         index = []
         dataset_dir = self._data_dir
-        if not dataset_dir.exists():
+        if not (dataset_dir / "metadata.csv").exists():
             self._load_part(part)
 
         metadata_path = dataset_dir / "metadata.csv"
