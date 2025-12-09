@@ -30,12 +30,13 @@ class LJSpeechDataset(BaseDataset):
     def _load_part(self, part):
         arch_path = self._data_dir / f"{part}.tar.bz2"
         print(f"Loading part {part}")
-        wget.download(URL_LINKS[part], str(arch_path))
+        if not arch_path.exists():
+            wget.download(URL_LINKS[part], str(arch_path))
         shutil.unpack_archive(arch_path, self._data_dir)
         for fpath in (self._data_dir).iterdir():
             shutil.move(str(fpath), str(self._data_dir / fpath.name))
-        os.remove(str(arch_path))
-        shutil.rmtree(str(self._data_dir))
+        #os.remove(str(arch_path))
+        #shutil.rmtree(str(self._data_dir))
 
     def _get_or_load_index(self, part):
         index_path = self._data_dir / f"{part}_index.json"
