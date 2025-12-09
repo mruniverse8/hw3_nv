@@ -6,6 +6,8 @@ from pathlib import Path
 import torchaudio
 import wget
 from tqdm import tqdm
+import tarfile
+import glob
 
 from src.datasets.base_dataset import BaseDataset
 from src.utils.io_utils import ROOT_PATH
@@ -29,12 +31,11 @@ class LJSpeechDataset(BaseDataset):
 
     def _load_part(self, part):
         arch_path = self._data_dir / f"{part}.tar.bz2"
-        print(f"Loading part {part}")
-        if not arch_path.exists():
-            wget.download(URL_LINKS[part], str(arch_path))
-        shutil.unpack_archive(arch_path, self._data_dir)
-        for fpath in (self._data_dir).iterdir():
-            shutil.move(str(fpath), str(self._data_dir / fpath.name))
+        for sub_arch in glob.glob(str(self._data_dir / "**/*.tar.bz2"), recursive=True):
+            sub_path = Path(sub_arch)
+            with tarfile.open(sub_path) as sub_tar:
+                sub_tar.extractall(sub_path.parent)
+        #os.remove(sub_arch)
         #os.remove(str(arch_path))
         #shutil.rmtree(str(self._data_dir))
 
