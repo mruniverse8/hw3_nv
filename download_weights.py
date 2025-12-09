@@ -3,7 +3,7 @@ import argparse
 
 def main():
     parser = argparse.ArgumentParser(description="Download a file from a URL.")
-    parser.add_argument("url")
+    parser.add_argument("url", default="https://drive.usercontent.google.com/download?id=1wTa6dAc5UIbWqTgXXS7x6W-bfxh1ZBWZ&export=download&authuser=0&confirm=t&uuid=275caf1d-6efa-40e5-85b7-b8a1787de2e4&at=ALWLOp5p5VzJolU-WzRKsTEPoWEP:1765315652384")
     parser.add_argument("-o", "--output", default="last_check.pth")
     
     args = parser.parse_args()
