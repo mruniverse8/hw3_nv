@@ -2,13 +2,18 @@ import warnings
 
 import hydra
 import torch
-from hydra.utils import instantiate,get_class
+from hydra.utils import instantiate, get_class
 from omegaconf import OmegaConf
-from itertools import chain #lazy
+from itertools import chain  # lazy
 
 from src.datasets.data_utils import get_dataloaders
 from src.trainer import Trainer
-from src.utils.init_utils import set_random_seed, setup_saving_and_logging
+from src.utils.init_utils import (
+    set_random_seed,
+    setup_saving_and_logging,
+    get_available_devices,
+    setup_data_parallel,
+)
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -29,11 +34,25 @@ def main(config):
     logger = setup_saving_and_logging(config)
     writer = instantiate(config.writer, logger, project_config)
 
+    # Device setup with parallel option
+    parallel_option = config.trainer.get("parallel_option", False)
+    config_device_ids = config.trainer.get("device_ids", None)
+    device_ids = None
+
     if config.trainer.device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if parallel_option and torch.cuda.is_available():
+            device, detected_device_ids, use_parallel = get_available_devices()
+            # Use config device_ids if specified, otherwise use detected
+            device_ids = config_device_ids if config_device_ids is not None else detected_device_ids
+            if device_ids and len(device_ids) >= 2:
+                logger.info(f"Multi-GPU training enabled on devices: {device_ids}")
+            else:
+                device_ids = None
+                logger.info("Single GPU training (not enough GPUs for parallel)")
+        else:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
     else:
         device = config.trainer.device
-
 
     # setup data_loader instances
     # batch_transforms should be put on device
@@ -41,8 +60,17 @@ def main(config):
 
     # build model architecture, then print to console
     model = instantiate(config.model).to(device)
-    discriminators = torch.nn.ModuleList(instantiate(config.discriminators)).to(device) #multiple discriminators
-    
+    discriminators = torch.nn.ModuleList(instantiate(config.discriminators)).to(device)
+
+    # Wrap with DataParallel if enabled
+    if device_ids is not None and len(device_ids) >= 2:
+        model = setup_data_parallel(model, device_ids)
+        # Wrap each discriminator individually
+        discriminators = torch.nn.ModuleList([
+            setup_data_parallel(disc, device_ids) for disc in discriminators
+        ])
+        logger.info(f"Models wrapped with DataParallel on GPUs: {device_ids}")
+
     logger.info(model)
 
     # get function handles of loss and metrics

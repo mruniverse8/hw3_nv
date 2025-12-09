@@ -160,3 +160,57 @@ def setup_saving_and_logging(config):
     logger.setLevel(logging.DEBUG)
 
     return logger
+
+
+def get_available_devices():
+    """
+    Detect available CUDA devices.
+
+    Returns:
+        tuple: (device, device_ids, use_data_parallel)
+            - device: primary device string (e.g., 'cuda:0')
+            - device_ids: list of GPU ids for DataParallel or None
+            - use_data_parallel: bool indicating if DataParallel should be used
+    """
+    if not torch.cuda.is_available():
+        return "cpu", None, False
+
+    device_count = torch.cuda.device_count()
+    if device_count == 1:
+        return "cuda:0", None, False
+
+    # Multiple GPUs available
+    device_ids = list(range(device_count))
+    return "cuda:0", device_ids, True
+
+
+def setup_data_parallel(model, device_ids=None):
+    """
+    Wrap model with DataParallel if multiple GPUs are available.
+
+    Args:
+        model: PyTorch model to wrap
+        device_ids: list of GPU ids to use (None for all available)
+
+    Returns:
+        model: Original or DataParallel-wrapped model
+    """
+    if device_ids is None or len(device_ids) <= 1:
+        return model
+
+    return torch.nn.DataParallel(model, device_ids=device_ids)
+
+
+def unwrap_model(model):
+    """
+    Get the underlying model from a DataParallel wrapper.
+
+    Args:
+        model: Either a raw model or DataParallel-wrapped model
+
+    Returns:
+        The underlying model
+    """
+    if isinstance(model, torch.nn.DataParallel):
+        return model.module
+    return model

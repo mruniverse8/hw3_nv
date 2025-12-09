@@ -399,10 +399,19 @@ class BaseTrainer:
         Returns:
             total_norm (float): the calculated norm.
         """
-        parameters = self.model.parameters()
+        # Handle DataParallel wrapped model
+        model = self.model
+        if isinstance(model, torch.nn.DataParallel):
+            model = model.module
+
+        parameters = model.parameters()
         if isinstance(parameters, torch.Tensor):
             parameters = [parameters]
         parameters = [p for p in parameters if p.grad is not None]
+
+        if len(parameters) == 0:
+            return 0.0
+
         total_norm = torch.norm(
             torch.stack([torch.norm(p.grad.detach(), norm_type) for p in parameters]),
             norm_type,
@@ -468,13 +477,20 @@ class BaseTrainer:
                 'model_best.pth'(do not duplicate the checkpoint as
                 checkpoint-epochEpochNumber.pth)
         """
-        arch = type(self.model).__name__
+        # Handle DataParallel wrapped model
+        model = self.model
+        if isinstance(model, torch.nn.DataParallel):
+            model = model.module
+
+        arch = type(model).__name__
         state = {
             "arch": arch,
             "epoch": epoch,
-            "state_dict": self.model.state_dict(),
-            "optimizer": self.optimizer.state_dict(),
-            "lr_scheduler": self.lr_scheduler.state_dict(),
+            "state_dict": model.state_dict(),
+            "optimizer_gen": self.optimizer_gen.state_dict(),
+            "optimizer_disc": self.optimizer_disc.state_dict(),
+            "lr_scheduler_gen": self.lr_scheduler_gen.state_dict(),
+            "lr_scheduler_disc": self.lr_scheduler_disc.state_dict(),
             "monitor_best": self.mnt_best,
             "config": self.config,
         }
@@ -509,13 +525,18 @@ class BaseTrainer:
         self.start_epoch = checkpoint["epoch"] + 1
         self.mnt_best = checkpoint["monitor_best"]
 
+        # Handle DataParallel wrapped model
+        model = self.model
+        if isinstance(model, torch.nn.DataParallel):
+            model = model.module
+
         # load architecture params from checkpoint.
         if checkpoint["config"]["model"] != self.config["model"]:
             self.logger.warning(
                 "Warning: Architecture configuration given in the config file is different from that "
                 "of the checkpoint. This may yield an exception when state_dict is loaded."
             )
-        self.model.load_state_dict(checkpoint["state_dict"])
+        model.load_state_dict(checkpoint["state_dict"])
 
         # load optimizer state from checkpoint only when optimizer type is not changed.
         if (
@@ -528,8 +549,21 @@ class BaseTrainer:
                 "are not resumed."
             )
         else:
-            self.optimizer.load_state_dict(checkpoint["optimizer"])
-            self.lr_scheduler.load_state_dict(checkpoint["lr_scheduler"])
+            # Load optimizers (check for both old and new key names)
+            if "optimizer_gen" in checkpoint:
+                self.optimizer_gen.load_state_dict(checkpoint["optimizer_gen"])
+                self.optimizer_disc.load_state_dict(checkpoint["optimizer_disc"])
+            elif "optimizer" in checkpoint:
+                # Legacy checkpoint format
+                self.optimizer_gen.load_state_dict(checkpoint["optimizer"])
+
+            # Load schedulers
+            if "lr_scheduler_gen" in checkpoint:
+                self.lr_scheduler_gen.load_state_dict(checkpoint["lr_scheduler_gen"])
+                self.lr_scheduler_disc.load_state_dict(checkpoint["lr_scheduler_disc"])
+            elif "lr_scheduler" in checkpoint:
+                # Legacy checkpoint format
+                self.lr_scheduler_gen.load_state_dict(checkpoint["lr_scheduler"])
 
         self.logger.info(
             f"Checkpoint loaded. Resume training from epoch {self.start_epoch}"

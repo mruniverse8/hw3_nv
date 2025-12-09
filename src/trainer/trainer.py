@@ -17,6 +17,58 @@ class Trainer(BaseTrainer):
         self.discriminators = discriminators
         super().__init__(*args, **kwargs)
 
+    def _save_checkpoint(self, epoch, save_best=False, only_best=False):
+        """
+        Save the checkpoints including discriminator states.
+
+        Args:
+            epoch (int): current epoch number.
+            save_best (bool): if True, rename the saved checkpoint to 'model_best.pth'.
+            only_best (bool): if True and the checkpoint is the best, save it only as
+                'model_best.pth'(do not duplicate the checkpoint as
+                checkpoint-epochEpochNumber.pth)
+        """
+        import torch
+
+        # Handle DataParallel wrapped model
+        model = self.model
+        if isinstance(model, torch.nn.DataParallel):
+            model = model.module
+
+        # Handle DataParallel for discriminators
+        disc_state_dicts = []
+        for disc in self.discriminators:
+            if isinstance(disc, torch.nn.DataParallel):
+                disc_state_dicts.append(disc.module.state_dict())
+            else:
+                disc_state_dicts.append(disc.state_dict())
+
+        arch = type(model).__name__
+        state = {
+            "arch": arch,
+            "epoch": epoch,
+            "state_dict": model.state_dict(),
+            "discriminator_state_dicts": disc_state_dicts,
+            "optimizer_gen": self.optimizer_gen.state_dict(),
+            "optimizer_disc": self.optimizer_disc.state_dict(),
+            "lr_scheduler_gen": self.lr_scheduler_gen.state_dict(),
+            "lr_scheduler_disc": self.lr_scheduler_disc.state_dict(),
+            "monitor_best": self.mnt_best,
+            "config": self.config,
+        }
+        filename = str(self.checkpoint_dir / f"checkpoint-epoch{epoch}.pth")
+        if not (only_best and save_best):
+            torch.save(state, filename)
+            if self.config.writer.log_checkpoints:
+                self.writer.add_checkpoint(filename, str(self.checkpoint_dir.parent))
+            self.logger.info(f"Saving checkpoint: {filename} ...")
+        if save_best:
+            best_path = str(self.checkpoint_dir / "model_best.pth")
+            torch.save(state, best_path)
+            if self.config.writer.log_checkpoints:
+                self.writer.add_checkpoint(best_path, str(self.checkpoint_dir.parent))
+            self.logger.info("Saving current best: model_best.pth ...")
+
     def process_batch(self, batch, metrics: MetricTracker):
         """
         Run batch through the model, compute metrics, compute loss,
