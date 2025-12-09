@@ -46,11 +46,12 @@ class GANLoss(torch.nn.Module):
         loss  = lambda_mel * F.l1_loss(mel_pred, mel_orig) #MEL-spectrogram loss
         ##print("still in gan loss")
         for discriminator in discriminators:
-            D_G_s, F_G_s_i = discriminator(pred_wav,feature_extraction = True)
-            D_x, F_x_i = discriminator(audio,feature_extraction = True)
-            assert(len(F_G_s_i) == len(F_x_i))
+            # Use positional arguments for DataParallel compatibility
+            D_G_s, F_G_s_i = discriminator(pred_wav, True)
+            D_x, F_x_i = discriminator(audio, True)
+            assert len(F_G_s_i) == len(F_x_i)
             for feat_x, feat_pred in zip(F_x_i, F_G_s_i):
                 loss += lambda_ft * F.l1_loss(feat_pred, feat_x)
-            loss += torch.mean((D_G_s - 1) **2) #GAN loss
+            loss += torch.mean((D_G_s - 1) ** 2)  # GAN loss
         ##print(f"losss {loss} end gan")
         return {"gan_loss": loss}

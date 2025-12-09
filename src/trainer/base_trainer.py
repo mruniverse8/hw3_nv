@@ -250,8 +250,15 @@ class BaseTrainer:
 
         # Run val/test
         for part, dataloader in self.evaluation_dataloaders.items():
-            val_logs = self._evaluation_epoch(epoch, part, dataloader)
-            logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+            try:
+                val_logs = self._evaluation_epoch(epoch, part, dataloader)
+                logs.update(**{f"{part}_{name}": value for name, value in val_logs.items()})
+            except Exception as e:
+                self.logger.warning(
+                    f"Error during evaluation on '{part}' partition: {e}. "
+                    "Skipping evaluation and continuing training."
+                )
+                # Continue training even if evaluation fails
 
         return logs
 

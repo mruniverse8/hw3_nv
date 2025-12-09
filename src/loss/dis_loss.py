@@ -12,11 +12,11 @@ class DisLoss(nn.Module):
             pred_detached = pred_wav.detach()
 
         for discriminator in discriminators:
-        
-            D_G_s, _ = discriminator(pred_detached, feature_extraction = False)
-            D_x, _ = discriminator(audio, feature_extraction = False)
+            # Use positional arguments for DataParallel compatibility
+            D_G_s, _ = discriminator(pred_detached, False)
+            D_x, _ = discriminator(audio, False)
 
-            part_loss = torch.mean((D_x - 1) ** 2) + torch.mean(D_G_s ** 2) #GAN loss
+            part_loss = torch.mean((D_x - 1) ** 2) + torch.mean(D_G_s ** 2)  # GAN loss
 
             if loss is None:
                 loss = part_loss
