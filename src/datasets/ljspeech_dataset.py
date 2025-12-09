@@ -53,11 +53,11 @@ class LJSpeechDataset(BaseDataset):
     def _create_index(self, part):
         index = []
         dataset_dir = self._data_dir
-        if not (dataset_dir / "metadata.csv").exists():
+        if not (dataset_dir/ "LJSpeech-1.1" / "metadata.csv").exists():
             self._load_part(part)
 
-        metadata_path = dataset_dir / "metadata.csv"
-        wavs_dir = dataset_dir / "wavs"
+        metadata_path = dataset_dir/"LJSpeech-1.1" / "metadata.csv"
+        wavs_dir = dataset_dir /"LJSpeech-1.1"/ "wavs"
         with metadata_path.open() as f:
             for line in f:
                 parts = line.strip().split('|')
