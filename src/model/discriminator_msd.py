@@ -16,22 +16,22 @@ class DiscriminatorMSD(nn.Module):
         #do we need to pad? I think no
         self.layers = nn.Sequential(
             class_normalization(nn.Conv1d(1, 16, kernel_size=15, stride=1, padding=7)),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
 
             class_normalization(nn.Conv1d(16, 64, kernel_size=41, stride=4, groups=4, padding=20)),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
 
             class_normalization(nn.Conv1d(64, 256, kernel_size=41, stride=4, groups=16, padding=20)),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
 
             class_normalization(nn.Conv1d(256, 1024, kernel_size=41, stride=4, groups=64, padding=20)),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
 
             class_normalization(nn.Conv1d(1024, 1024, kernel_size=41, stride=4, groups=256, padding=20)),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
 
             class_normalization(nn.Conv1d(1024, 1024, kernel_size=5, stride=1, padding=2)),
-            nn.LeakyReLU(),
+            nn.LeakyReLU(0.1),
 
             class_normalization(nn.Conv1d(1024, 1, kernel_size=3, stride=1, padding=1))
         )

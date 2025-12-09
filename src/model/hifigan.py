@@ -2,31 +2,33 @@ from typing import List
 import torch
 from torch import nn
 from torch.nn import Sequential
+from torch.nn.utils import weight_norm
+
 
 class MRFBlock(nn.Module):
-    def __init__(self, ch_in, ch_out, k_r , D_r: List):
+    def __init__(self, ch_in, ch_out, k_r, D_r: List):
         super().__init__()
         self.lst_block = nn.ModuleList()
         for m in range(len(D_r)):
             for l in range(len(D_r[m])):
-                
                 d_aux = D_r[m][l]
-                assert((d_aux*(k_r-1))%2 == 0) # cond to fix the padding indipendent of kernel and dilation 
-                
+                assert (d_aux * (k_r - 1)) % 2 == 0  # cond to fix padding independent of kernel and dilation
+
                 auxlayer = nn.Sequential(
-                    nn.LeakyReLU(),
-                    nn.Conv1d(ch_in, ch_out, kernel_size=k_r, dilation=D_r[m][l], padding=(d_aux*(k_r-1))//2)
+                    nn.LeakyReLU(0.1),
+                    weight_norm(nn.Conv1d(ch_in, ch_out, kernel_size=k_r, #todo check if improves
+                                         dilation=D_r[m][l], padding=(d_aux*(k_r-1))//2))
                 )
                 self.lst_block.append(auxlayer)
                 
     def forward(self, x: torch.Tensor):
         for block in self.lst_block:
-            x =  x + block(x) # The line in figure 1 is unclear, is a skip connection? or a cycle?
-            # taken as an skip connection
+            x = x + block(x)  # Skip connection
         return x
 
 
-class ResBlock(nn.Module): # no normalization in skip connection?
+class ResBlock(nn.Module):
+    """Residual block with weight normalization for training stability."""
 
     def __init__(self, h_u_prev, h_u_next, k_u, k_r, D_r):
         super().__init__()
@@ -35,11 +37,10 @@ class ResBlock(nn.Module): # no normalization in skip connection?
         self.k_u = k_u
         self.k_r = k_r
         self.D_r = D_r
-        self.lrel = nn.LeakyReLU()
-        assert(k_u%2 == 0)
-        #self.conv1 = nn.ConvTranspose1d(h_u_prev, h_u_next, kernel_size=k_u, stride=(k_u//2), padding=(k_u//2)) #pad to fix kernel constant so it only grows by stride
-        self.conv1 = nn.ConvTranspose1d(h_u_prev, h_u_next, kernel_size=k_u, stride=(k_u//2)) #pad to fix kernel constant so it only grows by stride
-        assert(len(k_r) == len(D_r))
+        self.lrel = nn.LeakyReLU(0.1)  # Slope 0.1 for better gradient flow
+        assert k_u % 2 == 0
+        self.conv1 = weight_norm(nn.ConvTranspose1d(h_u_prev, h_u_next, kernel_size=k_u, stride=(k_u//2)))
+        assert len(k_r) == len(D_r)
         self.mrf_blocks = nn.ModuleList()
         for i in range(len(k_r)):
             self.mrf_blocks.append(MRFBlock(h_u_next, h_u_next, k_r[i], D_r[i]))
@@ -53,33 +54,37 @@ class ResBlock(nn.Module): # no normalization in skip connection?
                 y = mrf(x)
             else:
                 y = y + mrf(x)
-        return y # Parallel sum plot in figure is interpreted as a sum of the outputs of the MRF blocks
-
+        return y
 
 
 class HIFIGAN(nn.Module):
     """
-    Simple MLP
+    HiFi-GAN Generator with weight normalization for training stability.
     """
 
     def __init__(self, sample_rate, n_mels, h_u, k_u, k_r, D_r):
         """
         Args:
-
+            sample_rate: Audio sample rate
+            n_mels: Number of mel spectrogram bins
+            h_u: Initial hidden dimension
+            k_u: List of upsampling kernel sizes
+            k_r: List of residual kernel sizes
+            D_r: List of dilation rates for residual blocks
         """
         super().__init__()
-        assert(len(k_r) == len(D_r))
+        assert len(k_r) == len(D_r)
         self._sample_r = sample_rate
         self._n_mels = n_mels
-        self.pre_conv = nn.Conv1d(n_mels, h_u, kernel_size=7, stride=1, padding=3) # pad to fix T? is it necessary?
+        self.pre_conv = weight_norm(nn.Conv1d(n_mels, h_u, kernel_size=7, stride=1, padding=3))
 
         self.res_block = nn.ModuleList()
         h_u_prev = h_u
         for i in range(len(k_u)):
-            self.res_block.append(ResBlock(h_u_prev, h_u_prev//2, k_u[i], k_r, D_r))
-            h_u_prev = h_u_prev//2
-        self.lrel = nn.LeakyReLU() # which value init?
-        self.post_conv = nn.Conv1d(h_u_prev, 1, kernel_size=7, stride=1, padding=3) # pad to fix?
+            self.res_block.append(ResBlock(h_u_prev, h_u_prev // 2, k_u[i], k_r, D_r))
+            h_u_prev = h_u_prev // 2
+        self.lrel = nn.LeakyReLU(0.1)
+        self.post_conv = weight_norm(nn.Conv1d(h_u_prev, 1, kernel_size=7, stride=1, padding=3))
         self.tanh = nn.Tanh()
 
 
