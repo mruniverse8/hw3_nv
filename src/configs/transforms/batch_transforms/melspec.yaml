@@ -1,7 +1,0 @@
-train:
-  get_spectrogram: # special key for getting spectrogram
-    _target_: torchaudio.transforms.MelSpectrogram
-inference:
-  get_spectrogram:
-    _target_: torchaudio.transforms.MelSpectrogram
-#no data_object maybe won't work?

@@ -56,12 +56,13 @@ def main(config):
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     
     optimizer_cls = get_class(config.optimizer.cls)
+    project_config["optimizer"].pop("cls")
     optimizer_discriminator = optimizer_cls(
-        chain(*[disc.parameters() for disc in discriminators.values()]),
-        **project_config["optimizer"]["optimizer_config"]
+        chain(*[disc.parameters() for disc in discriminators]),
+        **project_config["optimizer"]
     )
     optimizer_generator = optimizer_cls(
-        model.parameters(), **project_config["optimizer"]["optimizer_config"]
+        model.parameters(), **project_config["optimizer"]
     )
     
     lr_scheduler_gen = instantiate(config.lr_scheduler, optimizer=optimizer_generator)

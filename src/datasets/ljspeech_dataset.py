@@ -16,7 +16,7 @@ URL_LINKS = {
 
 
 class LJSpeechDataset(BaseDataset):
-    def __init__(self, part, data_dir=None, *args, **kwargs):
+    def __init__(self, part="train_all", data_dir=None, *args, **kwargs):
         assert part == "train_all"
 
         if data_dir is None:
@@ -32,10 +32,10 @@ class LJSpeechDataset(BaseDataset):
         print(f"Loading part {part}")
         wget.download(URL_LINKS[part], str(arch_path))
         shutil.unpack_archive(arch_path, self._data_dir)
-        for fpath in (self._data_dir / "LJSpeech-1.1").iterdir():
+        for fpath in (self._data_dir).iterdir():
             shutil.move(str(fpath), str(self._data_dir / fpath.name))
         os.remove(str(arch_path))
-        shutil.rmtree(str(self._data_dir / "LJSpeech-1.1"))
+        shutil.rmtree(str(self._data_dir))
 
     def _get_or_load_index(self, part):
         index_path = self._data_dir / f"{part}_index.json"
@@ -50,7 +50,7 @@ class LJSpeechDataset(BaseDataset):
 
     def _create_index(self, part):
         index = []
-        dataset_dir = self._data_dir / "LJSpeech-1.1"
+        dataset_dir = self._data_dir
         if not dataset_dir.exists():
             self._load_part(part)
 

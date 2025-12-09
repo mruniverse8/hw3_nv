@@ -37,7 +37,8 @@ class Trainer(BaseTrainer):
                 model outputs, and losses.
         """
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(batch)  # does nothing now
+        if self.batch_transforms is not None:
+            batch = self.transform_batch(batch)  # does nothing now
 
         metric_funcs = self.metrics["inference"]
         if self.is_train:
@@ -53,9 +54,21 @@ class Trainer(BaseTrainer):
 
         # Generator loss
         G_s = self.model(spectrogram)
-
         batch.update(G_s)
-        lst = []
+
+        batch.update(loss_disc(generator=self.model, discriminators=self.discriminators,**batch))
+        if self.is_train:
+            batch["dis_loss"].backward()  # sum of all losses is always called loss
+            self._clip_grad_norm()
+            self.optimizer_disc.step()
+            if self.lr_scheduler_disc is not None:
+                self.lr_scheduler_disc.step()
+            
+        if self.is_train:
+            metric_funcs = self.metrics["train"]
+            self.optimizer_gen.zero_grad()
+            self.optimizer_disc.zero_grad()
+        
         batch.update(loss_gen(generator=self.model, discriminators=self.discriminators,**batch))
         if self.is_train:
             batch["gan_loss"].backward()  # sum of all losses is always called loss
@@ -63,17 +76,6 @@ class Trainer(BaseTrainer):
             self.optimizer_gen.step()
             if self.lr_scheduler_gen is not None:
                 self.lr_scheduler_gen.step()
-            self.optimizer_gen.zero_grad()
-            self.optimizer_disc.zero_grad() 
-
-        batch.update(loss_disc(generator=self.model, discriminators=self.discriminators,**batch))
-
-        if self.is_train:
-            batch["dis_loss"].backward()  # sum of all losses is always called loss
-            self._clip_grad_norm()
-            self.optimizer_disc.step()
-            if self.lr_scheduler_disc is not None:
-                self.lr_scheduler_disc.step()
 
         # update metrics for each loss (in case of multiple losses)
         for loss_name in self.config.writer.loss_names:
@@ -99,12 +101,13 @@ class Trainer(BaseTrainer):
         # such as audio, text or images, for example
 
         # logging scheme might be different for different partitions
-        if mode == "train":  # the method is called only every self.log_step steps
-            self.log_spectrogram(**batch)
-        else:
+        #if mode == "train":  # the method is called only every self.log_step steps
+            #self.log_spectrogram(**batch)
+        #else:
             # Log Stuff
-            self.log_spectrogram(**batch)
-            self.log_waveforms_and_audio(**batch)
+            #self.log_spectrogram(**batch)
+        self.log_waveforms_and_audio(**batch)
+        self.log_spectrogram(**batch)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()
@@ -113,20 +116,25 @@ class Trainer(BaseTrainer):
     
     def log_waveforms_and_audio(self, pred_wav, audio, **batch):
         sample_rate = getattr(self.config, 'sample_rate', 22050)  # Adjust based on your config
-
-        pred_image = plot_waveform(pred_wav[0].detach().cpu(), "Predicted Waveform")
-        self.writer.add_image("predicted_waveform", pred_image)
-
+        print(f"shape of log_audio{audio.shape}")
+        
+        self.writer.add_audio("original_audio", audio[0], sample_rate=sample_rate)
         self.writer.add_audio("predicted_audio", pred_wav[0], sample_rate=sample_rate)
-
-        diff = pred_wav[0] - audio[0]
-        diff_image = plot_waveform(diff.detach().cpu(), "Difference (Pred - Original)")
-        self.writer.add_image("waveform_difference", diff_image)
+        min_len = min(pred_wav[0].shape[0], audio[0].shape[0])
+        diff = pred_wav[0,:min_len] - audio[0,:min_len]
 
         self.writer.add_audio("difference_audio", diff, sample_rate=sample_rate)
 
-        if not self.is_train:
-            orig_image = plot_waveform(audio[0].detach().cpu(), "Original Audio")
-            self.writer.add_image("original_waveform", orig_image)
-            self.writer.add_audio("original_audio", audio[0], sample_rate=sample_rate)
+
+        #pred_image = plot_waveform(pred_wav[0].detach().cpu(), "Predicted Waveform")
+        #self.writer.add_image("predicted_waveform", pred_image)
+        
+        #diff_image = plot_waveform(diff.detach().cpu(), "Difference (Pred - Original)")
+        #self.writer.add_image("waveform_difference", diff_image)
+
+        #if not self.is_train:
+            
+        #    orig_image = plot_waveform(audio[0].detach().cpu(), "Original Audio")
+        #    self.writer.add_image("original_waveform", orig_image)
+            
 

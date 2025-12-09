@@ -60,8 +60,10 @@ def get_dataloaders(config, device):
             tensor name.
     """
     # transforms or augmentations init
-    batch_transforms = instantiate(config.transforms.batch_transforms)
-    move_batch_transforms_to_device(batch_transforms, device)
+    batch_transforms = None
+    if config.transforms.batch_transforms is not None:
+        batch_transforms = instantiate(config.transforms.batch_transforms)
+        move_batch_transforms_to_device(batch_transforms, device)
 
     # dataloaders init
     dataloaders = {}

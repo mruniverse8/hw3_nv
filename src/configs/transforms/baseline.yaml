@@ -1,4 +1,2 @@
-defaults:
-  - batch_transforms: null #melspec or not where will be applied?
-  - instance_transforms: null
-  - _self_
+batch_transforms: null
+instance_transforms: null

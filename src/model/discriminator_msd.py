@@ -1,13 +1,16 @@
 import torch
 import torch.nn as nn
-from torch.nn.utils import weight_norm
+from hydra.utils import get_class
+import torch.nn.utils as utils
 
 
 class DiscriminatorMSD(nn.Module):
-    def __init__(self, class_normalization,pool_factor=None):
+    def __init__(self, class_normalization, pool_factor=None):
         super().__init__()
-        if class_normalization is None:
-            class_normalization = weight_norm
+        if class_normalization == "weight_norm":
+            class_normalization = utils.weight_norm
+        elif class_normalization == "spectral_norm":
+            class_normalization = utils.spectral_norm
         self.idx_features = []
         self.pool_factor = pool_factor
         #do we need to pad? I think no

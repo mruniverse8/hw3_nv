@@ -5,7 +5,7 @@ import numpy as np
 import torch
 import torchaudio
 from torch.utils.data import Dataset
-
+from src.transforms.wav_augs.mel import MelSpectrogram
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class BaseDataset(Dataset):
         audio_path = data_dict["path"]
         audio = self.load_audio(audio_path)
         text = data_dict["text"]
-        text_encoded = self.text_encoder.encode(text)
+        #text_encoded = self.text_encoder.encode(text)
 
         spectrogram = self.get_spectrogram(audio)
 

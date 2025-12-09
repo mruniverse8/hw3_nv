@@ -44,27 +44,27 @@ def plot_images(imgs, config):
 
 def plot_spectrogram(spectrogram, name=None):
     """
-    Plot spectrogram
-
+    Plot histogram of spectrogram values (instead of full image).
+    
     Args:
         spectrogram (Tensor): spectrogram tensor.
         name (None | str): optional name.
     Returns:
-        image (Image): image of the spectrogram
+        image (Image): image of the histogram.
     """
-    plt.figure(figsize=(20, 5))
-    plt.pcolormesh(spectrogram)
-    plt.title(name)
+    plt.figure(figsize=(10, 5))
+    data = spectrogram.flatten().detach().cpu().numpy()
+    plt.hist(data, bins=100, alpha=0.7)
+    plt.title(f"Histogram of {name}")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
     buf = io.BytesIO()
     plt.savefig(buf, format="png")
     buf.seek(0)
-
-    # convert buffer to Tensor
     image = ToTensor()(PIL.Image.open(buf))
-
     plt.close()
-
     return image
+
 
 def plot_waveform(waveform, name=None):
     plt.figure(figsize=(20, 5))

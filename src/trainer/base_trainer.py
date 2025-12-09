@@ -24,7 +24,6 @@ class BaseTrainer:
         optimizer_generator,
         lr_scheduler_gen,
         lr_scheduler_disc,
-        text_encoder,
         config,
         device,
         dataloaders,
@@ -76,7 +75,7 @@ class BaseTrainer:
         self.optimizer_disc = optimizer_discriminator
         self.lr_scheduler_gen = lr_scheduler_gen
         self.lr_scheduler_disc = lr_scheduler_disc
-        self.text_encoder = text_encoder
+        #self.text_encoder = text_encoder
         self.batch_transforms = batch_transforms
 
         # define dataloaders
@@ -231,12 +230,12 @@ class BaseTrainer:
             if batch_idx % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.epoch_len + batch_idx)
                 self.logger.debug(
-                    "Train Epoch: {} {} Loss: {:.6f}".format(
-                        epoch, self._progress(batch_idx), batch["loss"].item()
+                    "Train Epoch: {} {} Gen Loss: {:.6f} Disc Loss{:.6f}".format(
+                        epoch, self._progress(batch_idx), batch["gan_loss"].item(), batch["dis_loss"].item()
                     )
                 )
                 self.writer.add_scalar(
-                    "learning rate", self.lr_scheduler.get_last_lr()[0]
+                    "learning rate", self.lr_scheduler_gen.get_last_lr()[0]
                 )
                 self._log_scalars(self.train_metrics)
                 self._log_batch(batch_idx, batch)

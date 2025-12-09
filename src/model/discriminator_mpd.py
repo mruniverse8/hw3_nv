@@ -12,13 +12,13 @@ class DiscriminatorMPD(nn.Module):
         h_prev = 1
         for i in range(1, 5):
             self.idx_features.append(len(self.layers))
-            self.layers.append(nn.conv2d(h_prev, 2 **( 5 + i), (5, 1), stride=(3, 1), padding=(2, 0)))
+            self.layers.append(nn.Conv2d(h_prev, 2 **( 5 + i), (5, 1), stride=(3, 1), padding=(2, 0)))
             self.layers.append(nn.LeakyReLU())
             h_prev = 2 **( 5 + i)
-        self.layers.append(nn.conv2d(h_prev, 1024, (5, 1)))
+        self.layers.append(nn.Conv2d(h_prev, 1024, (5, 1)))
         self.idx_features.append(len(self.layers))
         self.layers.append(nn.LeakyReLU())
-        self.layers.append(nn.conv2d(1024, 1, (3, 1)))
+        self.layers.append(nn.Conv2d(1024, 1, (3, 1)))
         self.idx_features.append(len(self.layers))
 
     def reshape_with_padding(self, x):
