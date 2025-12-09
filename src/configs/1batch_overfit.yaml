@@ -15,7 +15,7 @@ optimizer:
   lr: 2e-4
 
 lr_scheduler:
-  _target_: torch.optim.lr_scheduler.ExponentialLR
+  _target_: torch.optim.lr_scheduler.StepLR # torch.optim.lr_scheduler.ExponentialLR learning rate updated everybach?
   gamma: 0.999
 
 loss_function:
@@ -31,6 +31,7 @@ loss_function:
 trainer:
   log_step: 250
   n_epochs: 40
+  epoch_len: 3300
   device_tensors: ["spectrogram", "audio"] # which tensors should be on device (ex. GPU)
   resume_from: null # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
