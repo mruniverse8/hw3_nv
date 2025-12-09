@@ -107,7 +107,7 @@ class Trainer(BaseTrainer):
             # Log Stuff
             #self.log_spectrogram(**batch)
         self.log_waveforms_and_audio(**batch)
-        self.log_spectrogram(**batch)
+        #self.log_spectrogram(**batch)
 
     def log_spectrogram(self, spectrogram, **batch):
         spectrogram_for_plot = spectrogram[0].detach().cpu()

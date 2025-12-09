@@ -1,6 +1,5 @@
 train:
   _target_: src.datasets.LJSpeechDataset
-  limit: 55
   instance_transforms:
     get_spectrogram:
       _target_: src.transforms.wav_augs.MelSpectrogram
