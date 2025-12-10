@@ -2,6 +2,7 @@ import warnings
 
 import hydra
 import torch
+import torchaudio
 from hydra.utils import instantiate, get_class
 from omegaconf import OmegaConf
 from itertools import chain  # lazy
@@ -92,6 +93,30 @@ def main(config):
         for key, value in logs[part].items():
             full_key = part + "_" + key
             print(f"    {full_key:15s}: {value}")
+    
+    # If single_txt is provided, return the generated audio tensor
+    if  config.datasets.train.single_txt is not None:
+        logger.info("Single text mode detected - returning generated audio")
+        # Load the generated audio file
+        sample_rate = config.get("sample_rate", 22050)
+        for part in dataloaders.keys():
+            part_dir = save_path / part
+            audio_files = list(part_dir.glob("pred_audio_*.wav"))
+            if audio_files:
+                # Load all predicted audio files
+                audio_tensors = []
+                for audio_file in sorted(audio_files):
+                    waveform, sr = torchaudio.load(str(audio_file))
+                    sample_rate = sr  # Use actual sample rate from file
+                    audio_tensors.append(waveform)
+                    logger.info(f"Loaded generated audio from {audio_file}: shape={waveform.shape}, sr={sample_rate}")
+                
+                
+                print(f"\n=== GENERATED AUDIO ===")
+                print(f"Shape: {audio_tensors[0].shape}")
+                print(f"Sample Rate: {sample_rate}")
+                print(f"Duration: {audio_tensors[0].shape[1] / sample_rate:.2f} seconds")
+                return audio_tensors[0], sample_rate
 
 
 

@@ -1,0 +1,27 @@
+[
+  {
+    "path": "test_data3/gt_audio/LJ001-0005.wav",
+    "text": "the invention of movable metal letters in the middle of the fifteenth century may justly be considered as the invention of the art of printing.",
+    "audio_len": 8.110884353741497
+  },
+  {
+    "path": "test_data3/gt_audio/LJ001-0004.wav",
+    "text": "produced the block books, which were the immediate predecessors of the true printed book,",
+    "audio_len": 5.138730158730159
+  },
+  {
+    "path": "test_data3/gt_audio/LJ001-0001.wav",
+    "text": "printing, in the only sense with which we are at present concerned, differs from most if not from all the arts and crafts represented in the exhibition",
+    "audio_len": 9.65501133786848
+  },
+  {
+    "path": "test_data3/gt_audio/LJ001-0003.wav",
+    "text": "for although the chinese took impressions from wood blocks engraved in relief for centuries before the woodcutters of the netherlands, by a similar process",
+    "audio_len": 9.666621315192744
+  },
+  {
+    "path": "test_data3/gt_audio/LJ001-0002.wav",
+    "text": "in being comparatively modern.",
+    "audio_len": 1.899546485260771
+  }
+]

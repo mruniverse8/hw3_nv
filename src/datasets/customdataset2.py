@@ -41,7 +41,7 @@ def generate_audio(text, sample_rate=22050):
         return waveform, sample_rate
 
 class CustomDirDataset(BaseDataset):
-    def __init__(self,data_dir=None, url_link=None, *args, **kwargs):
+    def __init__(self, data_dir=None, url_link=None, single_txt=None, *args, **kwargs):
         # assert part == "train_all"
         part = "train_all"
         if data_dir is None:
@@ -51,6 +51,19 @@ class CustomDirDataset(BaseDataset):
             data_dir = Path(data_dir)
         self._data_dir = data_dir
         self._url_link = url_link
+        self._single_txt = single_txt
+        
+        # If single_txt is provided, create the transcriptions directory with singletxt.txt
+        if self._single_txt:
+            transcriptions_dir = self._data_dir / "transcriptions"
+            transcriptions_dir.mkdir(exist_ok=True, parents=True)
+            singletxt_path = transcriptions_dir / "singletxt.txt"
+            with singletxt_path.open("w") as f:
+                f.write(self._single_txt)
+            singletxt_path = transcriptions_dir / "singletxt1.txt" #we need batch of size 2:P
+            
+            with singletxt_path.open("w") as f:
+                f.write(self._single_txt)
         index = self._get_or_load_index(part)
 
         super().__init__(index, *args, **kwargs)
@@ -125,13 +138,11 @@ class CustomDirDataset(BaseDataset):
                 text = f.read().strip().lower()
             
             wav_path = gt_audio_dir / f"{base_name}.wav"
-            
-            # Generate audio if it doesn't exist
+
             if not wav_path.exists():
                 waveform, sample_rate = generate_audio(text)
                 torchaudio.save(str(wav_path), waveform, sample_rate)
             
-            # Add to index if wav file exists
             if wav_path.exists():
                 t_info = torchaudio.info(str(wav_path))
                 length = t_info.num_frames / t_info.sample_rate
@@ -142,5 +153,4 @@ class CustomDirDataset(BaseDataset):
                         "audio_len": length,
                     }
                 )
-        
         return index

@@ -1,0 +1,27 @@
+[
+  {
+    "path": "test_data/gt_audio/termen.wav",
+    "text": "lev termen, better known as leon theremin was a russian inventor, most famous for his invention of the theremin, one of the first electronic musical instruments and the first to be mass-produced.",
+    "audio_len": 12.5
+  },
+  {
+    "path": "test_data/gt_audio/shostakovich.wav",
+    "text": "dmitri shostakovich was a soviet-era russian composer and pianist who became internationally known after the premiere of his first symphony in 1926 and thereafter was regarded as a major composer.",
+    "audio_len": 14.0
+  },
+  {
+    "path": "test_data/gt_audio/pupin.wav",
+    "text": "mihajlo pupin was a founding member of national advisory committee for aeronautics (naca) on 3 march 1915, which later became nasa, and he participated in the founding of american mathematical society and american physical society.",
+    "audio_len": 18.0
+  },
+  {
+    "path": "test_data/gt_audio/dla.wav",
+    "text": "deep learning in audio course at hse university offers an exciting and challenging exploration of cutting-edge techniques in audio processing, from speech recognition to music analysis. with complex homeworks that push students to apply theory to real-world problems, it provides a hands-on, rigorous learning experience that is both demanding and rewarding.",
+    "audio_len": 21.909319727891155
+  },
+  {
+    "path": "test_data/gt_audio/bernstein.wav",
+    "text": "leonard bernstein was an american conductor, composer, pianist, music educator, author, and humanitarian. considered to be one of the most important conductors of his time, he was the first american-born conductor to receive international acclaim.",
+    "audio_len": 16.5
+  }
+]

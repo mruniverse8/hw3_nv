@@ -1,0 +1,42 @@
+[
+  {
+    "path": "test_data2/gt_audio/input6.wav",
+    "text": "bring out your dead",
+    "audio_len": 1.6080272108843536
+  },
+  {
+    "path": "test_data2/gt_audio/input7.wav",
+    "text": "the story begins with the narrator arriving at the usher house, which is described as being",
+    "audio_len": 6.288027210884354
+  },
+  {
+    "path": "test_data2/gt_audio/input1.wav",
+    "text": "it's just a flesh wound",
+    "audio_len": 1.872018140589569
+  },
+  {
+    "path": "test_data2/gt_audio/input8.wav",
+    "text": "run away run away",
+    "audio_len": 1.9680272108843537
+  },
+  {
+    "path": "test_data2/gt_audio/input2.wav",
+    "text": "nobody expects the spanish inquisition",
+    "audio_len": 3.2880272108843536
+  },
+  {
+    "path": "test_data2/gt_audio/input3.wav",
+    "text": "i fart in your general direction",
+    "audio_len": 2.8080272108843536
+  },
+  {
+    "path": "test_data2/gt_audio/input4.wav",
+    "text": "we are the knights who say ni",
+    "audio_len": 2.52
+  },
+  {
+    "path": "test_data2/gt_audio/input5.wav",
+    "text": "what is the airspeed velocity of an unladen swallow",
+    "audio_len": 4.128027210884354
+  }
+]
