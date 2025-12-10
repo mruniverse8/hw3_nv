@@ -34,7 +34,7 @@ trainer:
   n_epochs: 40
   epoch_len: 3300
   device_tensors: ["spectrogram", "audio"] # which tensors should be on device (ex. GPU)
-  resume_from: "checkpoint-epoch1(1).pth" # null or path to the checkpoint dir with *.pth and config.yaml
+  resume_from: "checkpoint-epoch2.pth" # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   parallel_option: true  # Enable multi-GPU DataParallel training
   device_ids: null  # null for auto-detect all GPUs, or list like [0, 1] for specific GPUs

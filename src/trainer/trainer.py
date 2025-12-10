@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pandas as pd
-
+import torch
 from src.logger.utils import plot_spectrogram
 from src.logger.utils import plot_waveform
 from src.metrics.tracker import MetricTracker
@@ -28,14 +28,11 @@ class Trainer(BaseTrainer):
                 'model_best.pth'(do not duplicate the checkpoint as
                 checkpoint-epochEpochNumber.pth)
         """
-        import torch
 
-        # Handle DataParallel wrapped model
         model = self.model
         if isinstance(model, torch.nn.DataParallel):
             model = model.module
 
-        # Handle DataParallel for discriminators
         disc_state_dicts = []
         for disc in self.discriminators:
             if isinstance(disc, torch.nn.DataParallel):

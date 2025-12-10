@@ -1,9 +1,14 @@
 import torch
+import torchaudio
+import matplotlib.pyplot as plt
+import numpy as np
 from tqdm.auto import tqdm
 
 from src.metrics.tracker import MetricTracker
+from src.metrics.utils import _save_spectrogram_image, _save_audio
 from src.trainer.base_trainer import BaseTrainer
-
+from src.transforms.wav_augs.mel import MelSpectrogram
+from src.transforms.wav_augs.mel import MelSpectrogramConfig
 
 class Inferencer(BaseTrainer):
     """
@@ -17,10 +22,10 @@ class Inferencer(BaseTrainer):
     def __init__(
         self,
         model,
+        discriminators,
         config,
         device,
         dataloaders,
-        text_encoder,
         save_path,
         metrics=None,
         batch_transforms=None,
@@ -59,9 +64,9 @@ class Inferencer(BaseTrainer):
         self.device = device
 
         self.model = model
+        self.discriminators = discriminators
         self.batch_transforms = batch_transforms
-
-        self.text_encoder = text_encoder
+        self.mel_transform = MelSpectrogram(MelSpectrogramConfig())
 
         # define dataloaders
         self.evaluation_dataloaders = {k: v for k, v in dataloaders.items()}
@@ -98,6 +103,7 @@ class Inferencer(BaseTrainer):
             part_logs[part] = logs
         return part_logs
 
+
     def process_batch(self, batch_idx, batch, metrics, part):
         """
         Run batch through the model, compute metrics, and
@@ -120,42 +126,50 @@ class Inferencer(BaseTrainer):
                 the dataloader (possibly transformed via batch transform)
                 and model outputs.
         """
-        # TODO change inference logic so it suits ASR assignment
-        # and task pipeline
-
         batch = self.move_batch_to_device(batch)
         batch = self.transform_batch(batch)  # transform batch on device -- faster
 
-        outputs = self.model(**batch)
-        batch.update(outputs)
+        raw_audio = batch["audio"]
+        spectrogram = batch["spectrogram"]
+
+        G_s = self.model(spectrogram)
+
+        batch.update(G_s)
 
         if metrics is not None:
             for met in self.metrics["inference"]:
                 metrics.update(met.name, met(**batch))
 
-        # Some saving logic. This is an example
-        # Use if you need to save predictions on disk
+        # Get sample rate from config (default 22050 for HiFi-GAN)
+        sample_rate = self.config.get("sample_rate", 22050)
 
-        batch_size = batch["logits"].shape[0]
+        batch_size = batch["pred_wav"].shape[0]
         current_id = batch_idx * batch_size
 
         for i in range(batch_size):
             # clone because of
             # https://github.com/pytorch/pytorch/issues/1995
-            logits = batch["logits"][i].clone()
-            label = batch["labels"][i].clone()
-            pred_label = logits.argmax(dim=-1)
+            pred_wav = batch["pred_wav"][i].clone()
+            audio_i = batch["audio"][i].clone()
+            spec_i = spectrogram[i].clone()
 
             output_id = current_id + i
 
-            output = {
-                "pred_label": pred_label,
-                "label": label,
-            }
-
             if self.save_path is not None:
-                # you can use safetensors or other lib here
-                torch.save(output, self.save_path / part / f"output_{output_id}.pth")
+                part_dir = self.save_path / part
+                
+                pred_audio_path = part_dir / f"pred_audio_{output_id}.wav"
+                _save_audio(pred_wav, pred_audio_path, sample_rate)
+                
+                orig_audio_path = part_dir / f"orig_audio_{output_id}.wav"
+                _save_audio(audio_i, orig_audio_path, sample_rate)
+                
+                spec_path = part_dir / f"spectrogram_{output_id}.png"
+                _save_spectrogram_image(spec_i, spec_path, title=f"Input Spectrogram {output_id}")
+                
+                pred_spec = self.mel_transform(pred_wav.unsqueeze(0).cpu())[0]
+                pred_spec_path = part_dir / f"pred_spectrogram_{output_id}.png"
+                _save_spectrogram_image(pred_spec, pred_spec_path, title=f"Predicted Spectrogram {output_id}")
 
         return batch
 
@@ -173,7 +187,8 @@ class Inferencer(BaseTrainer):
         self.is_train = False
         self.model.eval()
 
-        self.evaluation_metrics.reset()
+        if self.evaluation_metrics is not None:
+            self.evaluation_metrics.reset()
 
         # create Save dir
         if self.save_path is not None:
@@ -192,4 +207,6 @@ class Inferencer(BaseTrainer):
                     metrics=self.evaluation_metrics,
                 )
 
-        return self.evaluation_metrics.result()
+        if self.evaluation_metrics is not None:
+            return self.evaluation_metrics.result()
+        return {}
