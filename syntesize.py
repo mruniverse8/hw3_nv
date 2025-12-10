@@ -116,7 +116,7 @@ def main(config):
                 print(f"Shape: {audio_tensors[0].shape}")
                 print(f"Sample Rate: {sample_rate}")
                 print(f"Duration: {audio_tensors[0].shape[1] / sample_rate:.2f} seconds")
-                return audio_tensors[0], sample_rate
+                return audio_tensors[0]
 
 
 
