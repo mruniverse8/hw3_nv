@@ -54,12 +54,13 @@ class Inferencer(BaseTrainer):
                 the model desirable weights are defined outside of the
                 Inferencer Class.
         """
+        print( config.trainer.get("from_pretrained"))
         assert (
-            skip_model_load or config.inferencer.get("from_pretrained") is not None
+            skip_model_load or config.trainer.get("from_pretrained") is not None
         ), "Provide checkpoint or set skip_model_load=True"
 
         self.config = config
-        self.cfg_trainer = self.config.inferencer
+        self.cfg_trainer = self.config.trainer
 
         self.device = device
 
@@ -87,7 +88,7 @@ class Inferencer(BaseTrainer):
 
         if not skip_model_load:
             # init model
-            self._from_pretrained(config.inferencer.get("from_pretrained"))
+            self._from_pretrained(config.trainer.get("from_pretrained"))
 
     def run_inference(self):
         """
@@ -127,7 +128,8 @@ class Inferencer(BaseTrainer):
                 and model outputs.
         """
         batch = self.move_batch_to_device(batch)
-        batch = self.transform_batch(batch)  # transform batch on device -- faster
+        if self.batch_transforms is not None:
+            batch = self.transform_batch(batch)  # transform batch on device -- faster
 
         raw_audio = batch["audio"]
         spectrogram = batch["spectrogram"]

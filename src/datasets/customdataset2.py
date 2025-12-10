@@ -41,12 +41,14 @@ def generate_audio(text, sample_rate=22050):
         return waveform, sample_rate
 
 class CustomDirDataset(BaseDataset):
-    def __init__(self, part="train_all", data_dir=None, url_link=None, *args, **kwargs):
-        assert part == "train_all"
-
+    def __init__(self,data_dir=None, url_link=None, *args, **kwargs):
+        # assert part == "train_all"
+        part = "train_all"
         if data_dir is None:
             data_dir = ROOT_PATH / "data" / "datasets" / "custom_dataset"
             data_dir.mkdir(exist_ok=True, parents=True)
+        else:
+            data_dir = Path(data_dir)
         self._data_dir = data_dir
         self._url_link = url_link
         index = self._get_or_load_index(part)

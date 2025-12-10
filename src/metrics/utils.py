@@ -1,9 +1,9 @@
 # Based on seminar materials
 
 # Don't forget to support cases when target_text == ''
-import plt
 import torchaudio
 import numpy
+from matplotlib import pyplot as plt
 
 def _save_spectrogram_image(spectrogram, save_path, title="Spectrogram"):
     """

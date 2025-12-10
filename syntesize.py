@@ -73,7 +73,7 @@ def main(config):
     logger.info(model)
 
     # save_path for model predictions
-    save_path = ROOT_PATH / "inferece_data" / "saved" / config.inferencer.save_path
+    save_path = ROOT_PATH / "inferece_data" / "saved" / config.trainer.save_dir
     save_path.mkdir(exist_ok=True, parents=True)
     inferencer = Inferencer(
         model=model,

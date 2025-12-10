@@ -49,15 +49,15 @@ def main(config):
         )
 
     # save_path for model predictions
-    save_path = ROOT_PATH / "data" / "saved" / config.inferencer.save_path
+    save_path = ROOT_PATH / "inferece_data" / "saved" / config.trainer.save_dir
     save_path.mkdir(exist_ok=True, parents=True)
 
     inferencer = Inferencer(
         model=model,
+        discriminators=discriminators,
         config=config,
         device=device,
         dataloaders=dataloaders,
-        text_encoder=text_encoder,
         batch_transforms=batch_transforms,
         save_path=save_path,
         metrics=metrics,

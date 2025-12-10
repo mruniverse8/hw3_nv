@@ -14,11 +14,11 @@ trainer:
   n_epochs: 40
   epoch_len: 3300
   device_tensors: ["spectrogram", "audio"] # which tensors should be on device (ex. GPU)
-  resume_from: "checkpoint-epoch2.pth" # null or path to the checkpoint dir with *.pth and config.yaml
+  from_pretrained: "checkpoint-epoch3.pth" # null or path to the checkpoint dir with *.pth and config.yaml
   device: auto # device name or "auto"
   parallel_option: true  # Enable multi-GPU DataParallel training
   device_ids: null  # null for auto-detect all GPUs, or list like [0, 1] for specific GPUs
-  override: False # if True, will override the previous run with the same name
+  override: True # if True, will override the previous run with the same name
   #monitor: "min val_WER_(Argmax)" # "off" or "max/min metric_name", i.e. our goal is to maximize/minimize metric
   monitor: "off"
   save_period: 1 # checkpoint each save_period epochs in addition to the best epoch
