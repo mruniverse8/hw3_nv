@@ -1,6 +1,10 @@
 # Demo Explanation for syntesize.py
 
 This document provides a step-by-step guide to setting up and using the `syntesize.py` script for text-to-speech synthesis.
+## 0 Git checkout
+```bash
+git checkout synthesizer
+```
 
 ## 1. Install Requirements
 
@@ -12,6 +16,7 @@ pip install -r requirements2.txt
 ```
 
 This will install all dependencies listed in `requirements.txt`, including PyTorch, torchaudio, hydra-core, and other libraries required for the project.
+
 
 ## 2. Download Weights
 
@@ -28,13 +33,10 @@ Replace `<weights_download_url>` with the actual URL specified in the notebook. 
 If the `saved_more` directory already exists with the required checkpoints (e.g., `checkpoint-epoch3.pth`), you can skip this step.
 
 ```bash
-python download_weights.py https://drive.usercontent.google.com/download?id=1KIp2IhbuiEU68g83pJ7G40FoUMFnIMlX&export=download&authuser=0&confirm=t&uuid=066f80fc-feb3-4dc1-8420-8d35dd70fc64&at=ALWLOp7pkhBvjTUJtTJZ7MrvmJ54:1765400324028 -o saved_more
+!python download_weights.py "https://drive.usercontent.google.com/download?id=1KIp2IhbuiEU68g83pJ7G40FoUMFnIMlX&export=download&authuser=0&confirm=t&uuid=066f80fc-feb3-4dc1-8420-8d35dd70fc64&at=ALWLOp7pkhBvjTUJtTJZ7MrvmJ54:1765400324028" -o .
 ```
 
-## 2.5 Git checkout
-```bash
-git checkout synthesizer
-```
+
 
 ## 3. Run Synthesis
 
